@@ -14,11 +14,9 @@ It demonstrates:
 - No personal data beyond public Steam review content is processed.  
 
 # Repo Structure (High-Level)
-.
-├── etl/                  # Python scripts for ingestion and transformation
-├── docs/                 # Diagrams and documentation assets
-├── sql/                  # SQL models and DDL/DML scripts
-├── bronze/               # Raw data layer (JSONB)
-├── silver/               # Clean, normalized schema
-├── gold/                 # BI-ready outputs
-└── README.md
+    .
+    ├── docs/                 # Diagrams and documentation assets
+    ├── bronze/               # Raw data layer (JSONB)
+    ├── silver/               # Clean, normalized schema
+    ├── gold/                 # BI-ready outputs
+    └── README.md
