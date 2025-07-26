@@ -15,8 +15,11 @@ It demonstrates:
 
 # Repo Structure (High-Level)
     .
-    ├── docs/                 # Diagrams and documentation assets
-    ├── bronze/               # Raw data layer (JSONB)
-    ├── silver/               # Clean, normalized schema
-    ├── gold/                 # BI-ready outputs
+    ├── docs/                     # Diagrams and documentation assets
+    ├── scripts/
+          ├── bronze/             # Python scripts regarding Bronze Layer
+          ├── silver/             # Stored procedures for Silver Layer
+                ├── sp_inserts    # Individual stored procedures for inserting (loading) of Silver Layer
+          ├── gold/               # Stored procedures for Gold Layer
+          ├── validity/           # Stored procedures looking for duplicates, nulls, etc., for each layer
     └── README.md
