@@ -1,53 +1,30 @@
-        Steam API (JSON files: game details, reviews, authors, pricing)
-        └──▶ 2.1 Source
-            └── JSON auto-fetched (~20,000 files)
-                └── Organized into ~300-file batches
-    
-                    ▼
-            2.2 Ingestion (Bronze Layer)
-            └── Python ETL Script
-                ├── Check file size (limit: 256 MiB for jsonb)
-                ├── Read & batch 300 JSON files
-                ├── Insert raw data → `bronze.steam_app_details`
-                └── Log status/errors → `bronze.load_log`
-    
-                    ▼
-            2.3 Transformation (Silver Layer)
-            ├── JSON Normalization
-            │   ├── Core: `silver.games_master`
-            │   ├── Dimensions:
-            │   │   ├── `dim_publishers`
-            │   │   ├── `dim_categories`
-            │   │   ├── `dim_genres`
-            │   │   ├── `dim_developers`
-            │   │   └── `dim_rating_agencies`
-            │   └── Bridges / Facts:
-            │       ├── `game_publishers`
-            │       ├── `game_categories`
-            │       ├── `game_genres`
-            │       ├── `game_developers`
-            │       ├── `game_ratings`
-            │       ├── `game_platforms`
-            │       ├── `review_authors`
-            │       ├── `game_review_stats`
-            │       └── `game_reviews`
-            ├── Data Quality Checks
-            │   ├── Null detection
-            │   ├── Duplicate checks
-            │   ├── Value-range validation
-            │   └── Orphaned foreign key detection
-            └── Integrity Enforcement
-                ├── Deduplication
-                ├── Foreign key validation
-                └── Controlled truncate-reload
-    
-                    ▼
-            2.4 Materialization (Gold Layer)
-            ├── Denormalization of bridge/dimension data
-            ├── Aggregations for KPIs
-            │   ├── Review stats → `gold.review_summary`
-            │   └── Game enrichment → `gold.games_enriched`
-            └── Output:
-                ├── Fast dashboard queries
-                ├── BI tooling
-                └── Reporting/exports
+# Data Flow Overview
+
+---
+
+## 1. Bronze Layer (Raw Data Ingestion)
+- **Source:** JSON files (Steam app details batches)
+- **Process:** Python script loads each batch of JSON files into the `bronze.steam_app_details` table.
+- **Tables:**
+  - `bronze.steam_app_details` (stores raw JSON data for each game)
+  - `bronze.load_log` (tracks success, skips, or errors during loading)
+
+## 2. Silver Layer (Data Transformation & Structuring)
+- **Source:** Data from `bronze.steam_app_details`
+- **Process:** A series of stored procedures parse and extract structured data from raw JSON into normalized dimension and fact tables in the `silver` schema.
+- **Key Tables:**
+  - Dimension tables: `dim_categories`, `dim_developers`, `dim_genres`, `dim_publishers`, `dim_rating_agencies`, `review_authors`, `games_master`
+  - Fact tables linking games to categories, developers, genres, publishers, ratings, platforms, reviews, and review statistics.
+- **Mechanism:** Multiple stored procedures run sequentially or individually to load and update these tables, handling nested JSON and ensuring unique keys.
+
+## 3. Gold Layer (Curated Analytical Model)
+- **Source:** Cleaned and structured data from the `silver` schema
+- **Process:** Single stored procedure `public.build_gold_tables()` builds star schema-style dimensional and fact tables in the `gold` schema optimized for querying and analytics.
+- **Key Steps:**
+  - Drop and recreate gold schema tables.
+  - Create dimensional tables (`dim_games`, `dim_platforms`, `dim_genres`, `dim_categories`, `dim_publishers`, `dim_developers`, `dim_rating_agencies`, `dim_review_authors`) by selecting from silver.
+  - Create fact tables (`fact_game_platforms`, `fact_game_genres`, `fact_game_categories`, `fact_game_publishers`, `fact_game_developers`, `fact_game_ratings`, `fact_reviews_agg`, `fact_reviews`) by joining or aggregating silver tables.
+  - Define primary keys and foreign keys for referential integrity.
+  - Add indexes to optimize query performance.
+
+---

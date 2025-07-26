@@ -1,32 +1,71 @@
-    Steam API (~20,000 JSON files)
-    └──▶ Pre-processed into 300-file batches
-        └──▶ Ingestion Pipeline (Python ETL)
-            └──▶ Bronze Layer
-                ├── raw JSON → `bronze.steam_app_details`
-                └── load logs → `bronze.load_log`
-                    └── [✓] Error handling
-                    └── [✓] Batch tracking
+# Data Architecture
 
-                ▼
-        Transformation Process
-        └──▶ Silver Layer (Normalized, Validated)
-            ├── Fact Tables
-            │   └── `silver.games_master`, `silver.game_reviews`, etc.
-            ├── Dimension Tables
-            │   └── `dim_publishers`, `dim_genres`, `dim_developers`, ...
-            └── Bridge Tables
-                └── `game_genres`, `game_developers`, `game_platforms`, ...
+The Steam API ingestion pipeline is organised into these main stages:
+- Data collecting
+- Pre‑processing
+- Batching
+- Bronze layer (staging)
+- Silver layer (relational)
+- Gold layer (semantic)
 
-                ▼
-        Aggregation & Denormalization
-        └──▶ Gold Layer (Analytics-Ready)
-            ├── `gold.games_enriched`
-            │   └── arrays of genres, platforms, devs, etc.
-            └── `gold.review_summary`
-                └── review counts, avg scores, latest review
+---
 
-                ▼
-        Output & Consumption
-        ├── Dashboards / BI Tools
-        ├── Ad-hoc SQL Queries
-        └── Reporting & Exports
+## Overview
+
+- **Source**  
+  • ~20 000 JSON files (Steam API “app details” payloads)  
+- **Destination**  
+  • PostgreSQL database  
+  • Schemas: `bronze` (raw), `silver` (cleaned/relational), `gold` (BI ready)
+
+---
+
+## Pre‑processing & Validation
+
+1. **File‑size check**  
+   - PostgreSQL `JSONB` limit ≈ 250 MiB  
+2. **Trim oversized files**  
+   - Strip out large blobs (e.g. screenshots, videos, background, etc.)  
+3. **Quality gate**  
+   - Verify each payload’s `"success": true` flag before loading
+
+---
+
+## Batching
+
+- **Batch size**: ~300 JSON files per folder  
+- **Naming**: `batch_0001/`, `batch_0002/`, …  
+- **Purpose**:  
+  1. Avoid oversized transactions  
+  2. Parallelise or retry smaller units  
+  3. Maintain load‐tracking granularity
+
+---
+
+## Bronze (Staging) Layer
+
+Inserts raw data in batches. It further keeps a track of each batch insertion in a `load_log` table.
+
+---
+
+## Silver (Cleansed / Relational) Layer
+
+Transforms raw JSONB into normalised, query‐ready tables in schema `silver`. Rebuilt end‑to‑end via one stored procedure (drops & recreates in dependency order).
+
+- Indexes on all FK columns
+- Enables fast joins across master, dimensions and review tables  
+
+---
+
+## Gold (Semantic) Layer
+
+The Gold layer builds on Silver’s cleaned data to produce analysis‑ready tables: conformed dimensions and fact tables with the necessary aggregations for reporting and BI.
+
+- **Primary Keys** on all dimension tables (`game_id`, `platform_id`, etc.)  
+- **Composite PKs** on fact tables where applicable (e.g. `(game_id, platform_id)`)  
+- **Foreign Keys** enforce referential integrity back to conformed dimensions  
+- **Indexes** on key join columns (`game_id`, `platform_id`, `genre_id`, etc.) for high‑performance analytics  
+
+---
+
+See more in data_flow.md and data_catalogue.md

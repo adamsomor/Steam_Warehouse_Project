@@ -35,7 +35,7 @@ BEGIN
 	TRUNCATE TABLE silver.games_master CASCADE;
 	
 	-- Step 3: Truncate review authors
-	TRUNCATE TABLE silver.review_authors;
+	TRUNCATE TABLE silver.review_authors CASCADE;
 	
 	-- Step 4: Truncate dimensions last
 	TRUNCATE TABLE

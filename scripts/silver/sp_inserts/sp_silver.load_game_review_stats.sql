@@ -54,7 +54,10 @@ BEGIN
         (rev->'author'->>'steamid')::BIGINT,
         (rev->>'voted_up')::BOOLEAN,
         (rev->>'votes_up')::BIGINT,
-        (rev->>'votes_funny')::BIGINT,
+	CASE
+	  WHEN (rev->>'votes_funny')::BIGINT = 4294967295 THEN NULL
+	  ELSE (rev->>'votes_funny')::BIGINT
+	END AS votes_funny,
         (rev->>'comment_count')::BIGINT,
         (rev->>'steam_purchase')::BOOLEAN,
         (rev->>'received_for_free')::BOOLEAN,
