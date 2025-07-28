@@ -13,12 +13,18 @@ It demonstrates:
 - Review authors' SteamIDs are handled strictly for referential integrity.  
 - No personal data beyond public Steam review content is processed.  
 
+### Notice
+- The current project is still to be considered work in progress and does not represent its final state.
+- Here, I would like to further state the inspiration behind the project came from Data with Baraa.
+- Some parts of this code were written with help from ChatGPT as a development assistant. Mostly bug hunting.
+
 # Repo Structure (High-Level)
-.
-├── etl/                  # Python scripts for ingestion and transformation
-├── docs/                 # Diagrams and documentation assets
-├── sql/                  # SQL models and DDL/DML scripts
-├── bronze/               # Raw data layer (JSONB)
-├── silver/               # Clean, normalized schema
-├── gold/                 # BI-ready outputs
-└── README.md
+    .
+    ├── docs/                     # Diagrams and documentation assets
+    ├── scripts/
+          ├── bronze/             # Python scripts regarding Bronze Layer
+          ├── silver/             # Stored procedures for Silver Layer
+                ├── sp_inserts    # Individual stored procedures for inserting (loading) of Silver Layer
+          ├── gold/               # Stored procedures for Gold Layer
+          ├── validity/           # Stored procedures looking for duplicates, nulls, etc., for each layer
+    └── README.md
