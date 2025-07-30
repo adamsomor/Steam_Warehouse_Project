@@ -4,17 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_dim_developers();
+		CALL silver.load_bridge_genre();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.dim_developers
+			into silver.bridge_genre
 ====================================================
 */
 
-
-CREATE OR REPLACE PROCEDURE silver.load_dim_developers()
+CREATE OR REPLACE PROCEDURE silver.load_bridge_genre()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -22,19 +21,21 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: dim_developers';
+    RAISE NOTICE 'Loading Silver Layer: bridge_genre';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-    INSERT INTO silver.dim_developers (developer_name)
-    SELECT DISTINCT
-        jsonb_array_elements_text(raw_json->'developers')
-    FROM bronze.steam_app_details
-    WHERE raw_json ? 'developers'
-      AND jsonb_typeof(raw_json->'developers') = 'array';
+	INSERT INTO silver.bridge_genre (steam_appid, genre_id)
+	SELECT DISTINCT
+	    b.steam_appid,
+	    (genre->>'id')::INTEGER AS genre_id
+	FROM bronze.steam_app_details AS b,
+	     jsonb_array_elements(b.raw_json->'genres') AS genre
+	WHERE b.raw_json ? 'genres'
+	  AND jsonb_typeof(b.raw_json->'genres') = 'array';
 
     end_time := clock_timestamp();
     RAISE NOTICE 'Load complete at % (took % seconds)',

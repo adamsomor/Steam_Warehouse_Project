@@ -4,16 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_dim_publishers();
+		CALL silver.load_dim_publisher();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.dim_publishers
+			into silver.dim_publisher
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_dim_publishers()
+CREATE OR REPLACE PROCEDURE silver.load_dim_publisher()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,14 +21,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: dim_publishers';
+    RAISE NOTICE 'Loading Silver Layer: dim_publisher';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-    INSERT INTO silver.dim_publishers (publisher_name)
+    INSERT INTO silver.dim_publisher (publisher_name)
 	SELECT DISTINCT
 	    publisher
 	FROM (

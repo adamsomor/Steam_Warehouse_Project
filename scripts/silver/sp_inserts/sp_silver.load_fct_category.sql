@@ -4,17 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_game_developers();
+		CALL silver.load_bridge_category();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.game_developers
+			into silver.bridge_category
 ====================================================
 */
 
-
-CREATE OR REPLACE PROCEDURE silver.load_game_developers()
+CREATE OR REPLACE PROCEDURE silver.load_bridge_category()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -22,26 +21,25 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: game_developers';
+    RAISE NOTICE 'Loading Silver Layer: bridge_category';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
-
-	INSERT INTO silver.game_developers (steam_appid, developer_id)
+	
+	INSERT INTO silver.bridge_category (steam_appid, category_id)
 	SELECT DISTINCT
-	    b.steam_appid,
-	    d.developer_id
-	FROM bronze.steam_app_details AS b
-	CROSS JOIN LATERAL jsonb_array_elements_text(b.raw_json->'developers') AS dev_name
-	JOIN silver.dim_developers d ON d.developer_name = dev_name
-	WHERE b.raw_json ? 'developers'
-	  AND jsonb_typeof(b.raw_json->'developers') = 'array';
-
+	    bd.steam_appid,
+	    (category->>'id')::INTEGER
+	FROM bronze.steam_app_details bd
+	CROSS JOIN LATERAL jsonb_array_elements(bd.raw_json->'categories') AS category
+	WHERE bd.raw_json ? 'categories';
+	
     end_time := clock_timestamp();
     RAISE NOTICE 'Load complete at % (took % seconds)',
                  end_time,
                  EXTRACT(EPOCH FROM end_time - start_time);
+
 END;
 $BODY$;

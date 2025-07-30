@@ -2,20 +2,14 @@
 
 -- DROP PROCEDURE IF EXISTS public.build_gold_tables();
 
-CREATE OR REPLACE PROCEDURE public.build_gold_tables(
+CREATE OR REPLACE PROCEDURE gold.build_gold_tables(
 	)
 LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN
-	-- Drop and recreate gold schema if needed
-	EXECUTE 'CREATE SCHEMA IF NOT EXISTS gold';
 	
-	------------------------------------------------------------
-	-- 1) Dimensions (no aggregation needed)
-	------------------------------------------------------------
-	
-	DROP TABLE IF EXISTS gold.dim_games CASCADE;
-	CREATE TABLE gold.dim_games AS
+	DROP TABLE IF EXISTS gold.hub_game CASCADE;
+	CREATE TABLE gold.hub_game AS
 	SELECT
 	  steam_appid            AS game_id,
 	  name,
@@ -33,14 +27,14 @@ BEGIN
 	  release_date,
 	  coming_soon,
 	  achievements_total
-	FROM silver.games_master;
+	FROM silver.hub_game;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_platforms CASCADE;
-	CREATE TABLE gold.dim_platforms AS
+	DROP TABLE IF EXISTS gold.bridge_platform CASCADE;
+	CREATE TABLE gold.bridge_platform AS
 	WITH uniq AS (
 	  SELECT DISTINCT platform
-	  FROM silver.game_platforms
+	  FROM silver.bridge_platform
 	)
 	SELECT
 	  ROW_NUMBER() OVER (ORDER BY platform) AS platform_id,
@@ -48,48 +42,48 @@ BEGIN
 	FROM uniq;
 
 	
-	DROP TABLE IF EXISTS gold.dim_genres CASCADE;
-	CREATE TABLE gold.dim_genres AS
+	DROP TABLE IF EXISTS gold.dim_genr CASCADE;
+	CREATE TABLE gold.dim_genr AS
 	SELECT
 	  genre_id,
 	  genre_description
-	FROM silver.dim_genres;
+	FROM silver.dim_genre;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_categories CASCADE;
-	CREATE TABLE gold.dim_categories AS
+	DROP TABLE IF EXISTS gold.dim_category CASCADE;
+	CREATE TABLE gold.dim_category AS
 	SELECT
 	  category_id,
 	  category_description
-	FROM silver.dim_categories;
+	FROM silver.dim_category;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_publishers CASCADE;
-	CREATE TABLE gold.dim_publishers AS
+	DROP TABLE IF EXISTS gold.dim_publisher CASCADE;
+	CREATE TABLE gold.dim_publisher AS
 	SELECT
 	  publisher_id,
 	  publisher_name
-	FROM silver.dim_publishers;
+	FROM silver.dim_publisher;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_developers CASCADE;
-	CREATE TABLE gold.dim_developers AS
+	DROP TABLE IF EXISTS gold.dim_developer CASCADE;
+	CREATE TABLE gold.dim_developer AS
 	SELECT
 	  developer_id,
 	  developer_name
-	FROM silver.dim_developers;
+	FROM silver.dim_developer;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_rating_agencies CASCADE;
-	CREATE TABLE gold.dim_rating_agencies AS
+	DROP TABLE IF EXISTS gold.dim_agency CASCADE;
+	CREATE TABLE gold.dim_agency AS
 	SELECT
 	  rating_agency_id,
 	  agency_code
-	FROM silver.dim_rating_agencies;
+	FROM silver.dim_agency;
 	
 	
-	DROP TABLE IF EXISTS gold.dim_review_authors CASCADE;
-	CREATE TABLE gold.dim_review_authors AS
+	DROP TABLE IF EXISTS gold.hub_author CASCADE;
+	CREATE TABLE gold.hub_author AS
 	SELECT
 	  steamid       AS author_id,
 	  num_reviews,
@@ -98,60 +92,55 @@ BEGIN
 	  playtime_at_review,
 	  playtime_last_two_weeks,
 	  last_played
-	FROM silver.review_authors;
+	FROM silver.hub_author;
 	
-	
-	------------------------------------------------------------
-	-- 2) Facts
-	------------------------------------------------------------
 
-
-	DROP TABLE IF EXISTS gold.fact_game_platforms CASCADE;
-	CREATE TABLE gold.fact_game_platforms AS
+	DROP TABLE IF EXISTS gold.bridge_platform CASCADE;
+	CREATE TABLE gold.bridge_platform AS
 	SELECT
 	  gp.steam_appid AS game_id,
 	  dp.platform_id
-	FROM silver.game_platforms gp
-	  JOIN gold.dim_platforms dp
+	FROM silver.bridge_platform gp
+	  JOIN gold.bridge_platform dp
 	    ON gp.platform = dp.platform
 	;
 
 	
-	DROP TABLE IF EXISTS gold.fact_game_genres CASCADE;
-	CREATE TABLE gold.fact_game_genres AS
+	DROP TABLE IF EXISTS gold.bridge_genre CASCADE;
+	CREATE TABLE gold.bridge_genre AS
 	SELECT
 	  steam_appid AS game_id,
 	  genre_id
-	FROM silver.game_genres;
+	FROM silver.bridge_genre;
 	
 	
-	DROP TABLE IF EXISTS gold.fact_game_categories CASCADE;
-	CREATE TABLE gold.fact_game_categories AS
+	DROP TABLE IF EXISTS gold.bridge_category CASCADE;
+	CREATE TABLE gold.bridge_category AS
 	SELECT
 	  steam_appid  AS game_id,
 	  category_id
-	FROM silver.game_categories;
+	FROM silver.bridge_category;
 	
 	
-	DROP TABLE IF EXISTS gold.fact_game_publishers CASCADE;
-	CREATE TABLE gold.fact_game_publishers AS
+	DROP TABLE IF EXISTS gold.bridge_publisher CASCADE;
+	CREATE TABLE gold.bridge_publisher AS
 	SELECT
 	  steam_appid   AS game_id,
 	  publisher_id
-	FROM silver.game_publishers;
+	FROM silver.bridge_publisher;
 	
 	
-	DROP TABLE IF EXISTS gold.fact_game_developers CASCADE;
-	CREATE TABLE gold.fact_game_developers AS
+	DROP TABLE IF EXISTS gold.bridge_developer CASCADE;
+	CREATE TABLE gold.bridge_developer AS
 	SELECT
 	  steam_appid   AS game_id,
 	  developer_id
-	FROM silver.game_developers;
+	FROM silver.bridge_developer;
 	
 	
 	-- Here we aggregate ratings per game and agency just in case multiple rows exist
-	DROP TABLE IF EXISTS gold.fact_game_ratings CASCADE;
-	CREATE TABLE gold.fact_game_ratings AS
+	DROP TABLE IF EXISTS gold.fct_rating CASCADE;
+	CREATE TABLE gold.fct_rating AS
 	SELECT
 	  steam_appid AS game_id,
 	  rating_agency_id,
@@ -160,12 +149,12 @@ BEGIN
 	  BOOL_OR(banned)        AS banned,
 	  BOOL_OR(use_age_gate)  AS use_age_gate,
 	  BOOL_OR(rating_generated) AS rating_generated
-	FROM silver.game_ratings
+	FROM silver.fct_rating
 	GROUP BY steam_appid, rating_agency_id;
 	
 	
-	DROP TABLE IF EXISTS gold.fact_reviews_agg CASCADE;
-	CREATE TABLE gold.fact_reviews_agg AS
+	DROP TABLE IF EXISTS gold.fct_review_agg CASCADE;
+	CREATE TABLE gold.fct_review_stat AS
 	SELECT
 	  steam_appid AS game_id,
 	  COUNT(*) AS review_count,
@@ -178,12 +167,12 @@ BEGIN
 	  MIN(timestamp_created) AS earliest_review,
 	  COUNT(DISTINCT author_steamid) AS unique_reviewers,
 	  ROUND(AVG(comment_count::NUMERIC),2) AS avg_comment_count
-	FROM silver.game_review_stats
+	FROM silver.fct_review_stat
 	GROUP BY steam_appid;
 	
 	
-	DROP TABLE IF EXISTS gold.fact_reviews CASCADE;
-	CREATE TABLE gold.fact_reviews AS
+	DROP TABLE IF EXISTS gold.fct_review_stat CASCADE;
+	CREATE TABLE gold.fct_review_stat AS
 	SELECT
 	  id                   AS review_stat_id,
 	  recommendation_id,
@@ -201,52 +190,52 @@ BEGIN
 	  weighted_vote_score,
 	  primarily_steam_deck,
 	  written_during_early_access
-	FROM silver.game_review_stats;
+	FROM silver.fct_review_stat;
 	
 
-	ALTER TABLE gold.dim_games         ADD PRIMARY KEY (game_id);
-	ALTER TABLE gold.dim_platforms     ADD PRIMARY KEY (platform_id);
-	ALTER TABLE gold.dim_genres        ADD PRIMARY KEY (genre_id);
-	ALTER TABLE gold.dim_categories    ADD PRIMARY KEY (category_id);
-	ALTER TABLE gold.dim_publishers    ADD PRIMARY KEY (publisher_id);
-	ALTER TABLE gold.dim_developers    ADD PRIMARY KEY (developer_id);
-	ALTER TABLE gold.dim_rating_agencies ADD PRIMARY KEY (rating_agency_id);
-	ALTER TABLE gold.dim_review_authors  ADD PRIMARY KEY (author_id);
+	ALTER TABLE gold.hub_game         ADD PRIMARY KEY (game_id);
+	ALTER TABLE gold.bridge_platform     ADD PRIMARY KEY (platform_id);
+	ALTER TABLE gold.dim_genre        ADD PRIMARY KEY (genre_id);
+	ALTER TABLE gold.dim_category    ADD PRIMARY KEY (category_id);
+	ALTER TABLE gold.dim_publisher    ADD PRIMARY KEY (publisher_id);
+	ALTER TABLE gold.dim_developer    ADD PRIMARY KEY (developer_id);
+	ALTER TABLE gold.dim_agency ADD PRIMARY KEY (rating_agency_id);
+	ALTER TABLE gold.dim_hub_author  ADD PRIMARY KEY (author_id);
 	
 	
-	ALTER TABLE gold.fact_game_platforms
-	  ADD CONSTRAINT fact_game_platforms_pk
+	ALTER TABLE gold.bridge_platform
+	  ADD CONSTRAINT bridge_platform_pk
 	    PRIMARY KEY (game_id, platform_id),
-	  ADD CONSTRAINT fact_game_platforms_game_id_fkey
-	    FOREIGN KEY (game_id) REFERENCES gold.dim_games(game_id),
-	  ADD CONSTRAINT fact_game_platforms_platform_id_fkey
-	    FOREIGN KEY (platform_id) REFERENCES gold.dim_platforms(platform_id);
+	  ADD CONSTRAINT bridge_platform_game_id_fkey
+	    FOREIGN KEY (game_id) REFERENCES gold.hub_game(game_id),
+	  ADD CONSTRAINT bridge_platform_platform_id_fkey
+	    FOREIGN KEY (platform_id) REFERENCES gold.bridge_platform(platform_id);
 	
-	ALTER TABLE gold.fact_game_genres
+	ALTER TABLE gold.bridge_genre
 	  ADD PRIMARY KEY (game_id, genre_id);
 	
-	ALTER TABLE gold.fact_game_categories
+	ALTER TABLE gold.bridge_category
 	  ADD PRIMARY KEY (game_id, category_id);
 	
-	ALTER TABLE gold.fact_game_publishers
+	ALTER TABLE gold.bridge_publisher
 	  ADD PRIMARY KEY (game_id, publisher_id);
 	
-	ALTER TABLE gold.fact_game_developers
+	ALTER TABLE gold.bridge_developer
 	  ADD PRIMARY KEY (game_id, developer_id);
 	
-	ALTER TABLE gold.fact_game_ratings
+	ALTER TABLE gold.fct_rating
 	  ADD PRIMARY KEY (game_id, rating_agency_id);
 	
-	ALTER TABLE gold.fact_reviews_agg
+	ALTER TABLE gold.fct_review_agg
 	  ADD PRIMARY KEY (game_id);
 
 	
-	CREATE INDEX idx_fact_game_platforms_game_id ON gold.fact_game_platforms (game_id);
-	CREATE INDEX idx_fact_game_genres_game_id   ON gold.fact_game_genres (game_id);
+	CREATE INDEX idx_bridge_platform_game_id ON gold.bridge_platform (game_id);
+	CREATE INDEX idx_bridge_genre_game_id   ON gold.bridge_genre (game_id);
 	
-	CREATE INDEX idx_dim_games_type ON gold.dim_games (type);
-	CREATE INDEX idx_dim_games_price_final ON gold.dim_games (price_final);
-	CREATE INDEX idx_fact_reviews_agg_review_count ON gold.fact_reviews_agg (review_count);
+	CREATE INDEX idx_hub_game_type ON gold.hub_game (type);
+	CREATE INDEX idx_hub_game_price_final ON gold.hub_game (price_final);
+	CREATE INDEX idx_fct_review_agg_review_count ON gold.fct_review_agg (review_count);
 
 
 END;

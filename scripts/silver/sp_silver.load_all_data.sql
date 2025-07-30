@@ -34,50 +34,50 @@ BEGIN
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
-	CALL silver.load_dim_publishers();
-    RAISE NOTICE '<< Completed dim_publishers';
+	CALL silver.load_dim_publisher();
+    RAISE NOTICE '<< Completed dim_publisher';
 
-	CALL silver.load_dim_categories();
-    RAISE NOTICE '<< Completed dim_categories';
+	CALL silver.load_dim_category();
+    RAISE NOTICE '<< Completed dim_category';
 
-	CALL silver.load_dim_genres();
-    RAISE NOTICE '<< Completed dim_genres';
+	CALL silver.load_dim_genre();
+    RAISE NOTICE '<< Completed dim_genre';
 
-	CALL silver.load_dim_developers();
-    RAISE NOTICE '<< Completed dim_developers';
+	CALL silver.load_dim_developer();
+    RAISE NOTICE '<< Completed dim_developer';
 
-	CALL silver.load_dim_rating();
-    RAISE NOTICE '<< Completed dim_rating_agencies';
+	CALL silver.load_dim_agency();
+    RAISE NOTICE '<< Completed dim_agency';
 
-	CALL silver.load_review_authors();
-    RAISE NOTICE '<< Completed review_authors';
+	CALL silver.load_hub_author();
+    RAISE NOTICE '<< Completed hub_author';
 
-	CALL silver.load_games_master();
-    RAISE NOTICE '<< Completed games_master';
+	CALL silver.load_hub_game();
+    RAISE NOTICE '<< Completed hub_game';
 
-	CALL silver.load_game_publishers();
-    RAISE NOTICE '<< Completed game_publishers';
+	CALL silver.load_bridge_publisher();
+    RAISE NOTICE '<< Completed bridge_publisher';
 
-	CALL silver.load_game_categories();
-    RAISE NOTICE '<< Completed game_categories';
+	CALL silver.load_bridge_category();
+    RAISE NOTICE '<< Completed bridge_categorie';
 
-	CALL silver.load_game_genres();
-    RAISE NOTICE '<< Completed game_genres';
+	CALL silver.load_bridge_genre();
+    RAISE NOTICE '<< Completed bridge_genre';
 
-	CALL silver.load_game_developers();
-    RAISE NOTICE '<< Completed game_developers';
+	CALL silver.load_bridge_developer();
+    RAISE NOTICE '<< Completed bridge_developer';
 
-	CALL silver.load_game_ratings();
-    RAISE NOTICE '<< Completed game_ratings';
+	CALL silver.load_fct_rating();
+    RAISE NOTICE '<< Completed fct_rating';
 
-	CALL silver.load_game_platforms();
-    RAISE NOTICE '<< Completed game_platforms';
+	CALL silver.load_bridge_platform();
+    RAISE NOTICE '<< Completed bridge_platform';
 
-	CALL silver.load_game_review_stats();
-    RAISE NOTICE '<< Completed game_review_stats';
+	CALL silver.load_fct_review_stat();
+    RAISE NOTICE '<< Completed fct_review_stat';
 	
-	CALL silver.load_game_reviews();
-    RAISE NOTICE '<< Completed game_reviews';
+	CALL silver.load_sat_review_text();
+    RAISE NOTICE '<< Completed sat_review_text';
 	
     RAISE NOTICE '================================================';
     RAISE NOTICE 'Full SILVER layer load complete';

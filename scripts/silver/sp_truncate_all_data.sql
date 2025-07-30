@@ -21,29 +21,29 @@ BEGIN
 
 	-- Step 1: Truncate most dependent tables first
 	TRUNCATE TABLE
-	    silver.game_reviews,
-	    silver.game_review_stats,
-	    silver.game_platforms,
-	    silver.game_ratings,
-	    silver.game_developers,
-	    silver.game_genres,
-	    silver.game_categories,
-	    silver.game_publishers
+	    silver.sat_review_text,
+	    silver.fct_review_stat,
+	    silver.bridge_platform,
+	    silver.fct_rating,
+	    silver.bridge_developer,
+	    silver.bridge_genre,
+	    silver.bridge_category,
+	    silver.bridge_publisher
 	CASCADE;
 	
 	-- Step 2: Truncate core game table
-	TRUNCATE TABLE silver.games_master CASCADE;
+	TRUNCATE TABLE silver.hub_game CASCADE;
 	
 	-- Step 3: Truncate review authors
-	TRUNCATE TABLE silver.review_authors CASCADE;
+	TRUNCATE TABLE silver.hub_author CASCADE;
 	
 	-- Step 4: Truncate dimensions last
 	TRUNCATE TABLE
-	    silver.dim_rating_agencies,
-	    silver.dim_developers,
-	    silver.dim_genres,
-	    silver.dim_categories,
-	    silver.dim_publishers
+	    silver.dim_agency,
+	    silver.dim_developer,
+	    silver.dim_genre,
+	    silver.dim_category,
+	    silver.dim_publisher
 	RESTART IDENTITY CASCADE;
 
 END

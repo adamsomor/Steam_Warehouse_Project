@@ -4,16 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_game_review_stats();
+		CALL silver.load_fct_review_stat();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.game_review_stats
+			into silver.fct_review_stat
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_game_review_stats()
+CREATE OR REPLACE PROCEDURE silver.load_fct_review_stat()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,14 +21,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: game_review_stats';
+    RAISE NOTICE 'Loading Silver Layer: fct_review_stat';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-    INSERT INTO silver.game_review_stats (
+    INSERT INTO silver.fct_review_stat (
         recommendation_id,
         steam_appid,
         language,

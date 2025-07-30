@@ -53,18 +53,19 @@ Inserts raw data in batches. It further keeps a track of each batch insertion in
 Transforms raw JSONB into normalised, query‐ready tables in schema `silver`. Rebuilt end‑to‑end via one stored procedure (drops & recreates in dependency order).
 
 - Indexes on all FK columns
-- Enables fast joins across master, dimensions and review tables  
+
+- Dimensions are lookup tables
+- Hub ensure a single source of truth
+- Facts store numeric measures for analysis
+- Bridges model pure M‑N relationships without measures
+- Satellites hold large text attributes
 
 ---
 
 ## Gold (Semantic) Layer
 
-The Gold layer builds on Silver’s cleaned data to produce analysis‑ready tables: conformed dimensions and fact tables with the necessary aggregations for reporting and BI.
+The Gold layer builds on Silver’s cleaned data to produce analysis‑ready tables.
 
-- **Primary Keys** on all dimension tables (`game_id`, `platform_id`, etc.)  
-- **Composite PKs** on fact tables where applicable (e.g. `(game_id, platform_id)`)  
-- **Foreign Keys** enforce referential integrity back to conformed dimensions  
-- **Indexes** on key join columns (`game_id`, `platform_id`, `genre_id`, etc.) for high‑performance analytics  
 
 ---
 

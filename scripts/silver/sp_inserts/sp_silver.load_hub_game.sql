@@ -4,17 +4,17 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_games_master();
+		CALL silver.load_hub_game();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.games_master
+			into silver.hub_game
 ====================================================
 */
 
 
-CREATE OR REPLACE PROCEDURE silver.load_games_master(
+CREATE OR REPLACE PROCEDURE silver.load_hub_game(
 	)
 LANGUAGE 'plpgsql'
 AS $BODY$
@@ -23,14 +23,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: games_master';
+    RAISE NOTICE 'Loading Silver Layer: hub_game';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-	INSERT INTO silver.games_master (
+	INSERT INTO silver.hub_game (
 	    steam_appid,
 		name,
 		required_age,

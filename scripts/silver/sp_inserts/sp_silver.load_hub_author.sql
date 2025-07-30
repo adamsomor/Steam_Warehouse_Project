@@ -4,16 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_review_authors();
+		CALL silver.load_hub_author();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.review_authors
+			into silver.hub_author
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_review_authors()
+CREATE OR REPLACE PROCEDURE silver.load_hub_author()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,14 +21,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: review_authors';
+    RAISE NOTICE 'Loading Silver Layer: hub_author';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-	INSERT INTO silver.review_authors (
+	INSERT INTO silver.hub_author (
 	    steamid,
 	    num_reviews,
 	    num_games_owned,

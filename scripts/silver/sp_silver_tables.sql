@@ -1,80 +1,78 @@
--- PROCEDURE: silver.rebuild_all_tables()
+-- PROCEDURE: silver.build_silver_tables()
 
--- DROP PROCEDURE IF EXISTS silver.rebuild_all_tables();
+-- DROP PROCEDURE IF EXISTS silver.build_silver_tables();
 
-CREATE OR REPLACE PROCEDURE build_silver_tables(
+CREATE OR REPLACE PROCEDURE silver.build_silver_tables(
 	)
 LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN
 -- Drop tables if exist, order matters due to FK constraints
-	DROP TABLE IF EXISTS silver.game_reviews;
-	DROP TABLE IF EXISTS silver.game_review_stats;
+	DROP TABLE IF EXISTS silver.sat_review_text;
+	DROP TABLE IF EXISTS silver.fct_review_stat;
 	
-	DROP TABLE IF EXISTS silver.game_platforms;
+	DROP TABLE IF EXISTS silver.bridge_platform;
 	
-	DROP TABLE IF EXISTS silver.game_publishers;
-	DROP TABLE IF EXISTS silver.game_categories;
-	DROP TABLE IF EXISTS silver.game_genres;
-	DROP TABLE IF EXISTS silver.game_developers;
-	DROP TABLE IF EXISTS silver.game_ratings;
+	DROP TABLE IF EXISTS silver.bridge_publisher;
+	DROP TABLE IF EXISTS silver.bridge_category;
+	DROP TABLE IF EXISTS silver.bridge_genre;
+	DROP TABLE IF EXISTS silver.bridge_developer;
+	DROP TABLE IF EXISTS silver.fct_rating;
 	
-	DROP TABLE IF EXISTS silver.review_authors;
+	DROP TABLE IF EXISTS silver.hub_author;
 	
-	DROP TABLE IF EXISTS silver.games_master;
+	DROP TABLE IF EXISTS silver.hub_game;
 	
-	DROP TABLE IF EXISTS silver.dim_publishers;
-	DROP TABLE IF EXISTS silver.dim_categories;
-	DROP TABLE IF EXISTS silver.dim_genres;
-	DROP TABLE IF EXISTS silver.dim_developers;
-	DROP TABLE IF EXISTS silver.dim_rating_agencies;
-
-	EXECUTE 'CREATE SCHEMA IF NOT EXISTS silver';
+	DROP TABLE IF EXISTS silver.dim_publisher;
+	DROP TABLE IF EXISTS silver.dim_category;
+	DROP TABLE IF EXISTS silver.dim_genre;
+	DROP TABLE IF EXISTS silver.dim_developer;
+	DROP TABLE IF EXISTS silver.dim_agency;
 
 /*
 ===================================================================
-1. Dimension tables (independent):
+1. Dimension tables:
 ===================================================================
 */
 
-	-- Publishers dimension table; unique list of all publishers
-	CREATE TABLE silver.dim_publishers (
+	-- Lookup of publisher names
+	CREATE TABLE silver.dim_publisher (
 	    publisher_id SERIAL PRIMARY KEY,
 	    publisher_name TEXT UNIQUE
 	);
 
-	-- Categories dimension table; unique list of all categories
-	CREATE TABLE silver.dim_categories (
+	-- Lookup of category names
+	CREATE TABLE silver.dim_category (
 	    category_id INTEGER PRIMARY KEY,
 	    category_description TEXT
 	);
 
-	-- Genres dimension table; unique list of all genres
-	CREATE TABLE silver.dim_genres (
+	-- Lookup of genre names
+	CREATE TABLE silver.dim_genre (
 	    genre_id INTEGER PRIMARY KEY,
 	    genre_description TEXT UNIQUE
 	);
 
-	-- Developers dimension table; unique list of all developers
-	CREATE TABLE silver.dim_developers (
+	-- Lookup of developer names
+	CREATE TABLE silver.dim_developer (
 	    developer_id SERIAL PRIMARY KEY,
 	    developer_name TEXT UNIQUE
 	);
 
-	-- Rating agencies dimension table; e.g. ESRB, PEGI, DEJUS
-	CREATE TABLE silver.dim_rating_agencies (
+	-- Lookup of rating agencies: e.g. ESRB, PEGI, DEJUS
+	CREATE TABLE silver.dim_agency (
 	    rating_agency_id SERIAL PRIMARY KEY,
 	    agency_code TEXT UNIQUE NOT NULL  -- e.g. 'esrb', 'dejus'
 	);
 
 /*
 ===================================================================
-2. Author lookup
+2. Hub tables:
 ===================================================================
 */
 
-	-- Author metadata for reviewers
-	CREATE TABLE silver.review_authors (
+	-- Core “Author” entity; business‑key (steamid) plus static author attributes
+	CREATE TABLE silver.hub_author (
 	    steamid BIGINT PRIMARY KEY,
 	    num_reviews INTEGER,
 	    num_games_owned INTEGER,
@@ -84,14 +82,8 @@ BEGIN
 	    last_played TIMESTAMP
 	);
 
-/*
-===================================================================
-3. Core game table:
-===================================================================
-*/
-
-	-- Main game details table; stores core attributes of each game
-	CREATE TABLE silver.games_master (
+	-- Core “Game” entity; holds its business‑key (steam_appid) plus static attributes
+	CREATE TABLE silver.hub_game (
 	    steam_appid INTEGER PRIMARY KEY,
 	    name TEXT,
 	    required_age INTEGER,
@@ -117,42 +109,55 @@ BEGIN
 
 /*
 ===================================================================
-4. Bridge tables (many-to-many, dependent on core + dimensions):
+3. Bridge tables (many-to-many, dependent on core + dimensions):
 ===================================================================
 */
 
-	-- Bridge table linking games to publishers (many-to-many)
-	CREATE TABLE silver.game_publishers (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    publisher_id INTEGER REFERENCES silver.dim_publishers(publisher_id),
+	-- M‑N between Game - Publisher
+	CREATE TABLE silver.bridge_publisher (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    publisher_id INTEGER REFERENCES silver.dim_publisher(publisher_id),
 	    PRIMARY KEY (steam_appid, publisher_id)
 	);
 
-	-- Bridge table linking games to categories (many-to-many)
-	CREATE TABLE silver.game_categories (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    category_id INTEGER REFERENCES silver.dim_categories(category_id),
+	-- M‑N between Game - Category, no measures, only keys
+	CREATE TABLE silver.bridge_category (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    category_id INTEGER REFERENCES silver.dim_category(category_id),
 	    PRIMARY KEY (steam_appid, category_id)
 	);
 
-	-- Bridge table linking games to genres (many-to-many)
-	CREATE TABLE silver.game_genres (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    genre_id INTEGER REFERENCES silver.dim_genres(genre_id),
+	-- M‑N between Game - Genre
+	CREATE TABLE silver.bridge_genre (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    genre_id INTEGER REFERENCES silver.dim_genre(genre_id),
 	    PRIMARY KEY (steam_appid, genre_id)
 	);
 
-	-- Bridge table linking games to developers (many-to-many)
-	CREATE TABLE silver.game_developers (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    developer_id INTEGER REFERENCES silver.dim_developers(developer_id),
+	-- M‑N between Game - Developer
+	CREATE TABLE silver.bridge_developer (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    developer_id INTEGER REFERENCES silver.dim_developer(developer_id),
 	    PRIMARY KEY (steam_appid, developer_id)
 	);
 
-	-- Bridge table linking games to various agencies
-	CREATE TABLE silver.game_ratings (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    rating_agency_id INTEGER REFERENCES silver.dim_rating_agencies(rating_agency_id),
+
+	-- M‑N between Game - Platform, no numeric measures
+	CREATE TABLE silver.bridge_platform (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    platform TEXT,
+	    PRIMARY KEY (steam_appid, platform)
+	);
+/*
+===================================================================
+4. Fact Tables
+===================================================================
+*/
+
+	-- Contains measures (required_age, banned, etc.) linked to Game & Agency
+	CREATE TABLE silver.fct_rating (
+	    steam_appid INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    rating_agency_id INTEGER REFERENCES silver.dim_agency(rating_agency_id),
 	    
 	    rating TEXT,                  -- e.g. 'M', '16'
 	    required_age INTEGER,
@@ -162,25 +167,12 @@ BEGIN
 	    PRIMARY KEY (steam_appid, rating_agency_id)
 	);
 
-/*
-===================================================================
-5. Other dependent tables
-===================================================================
-*/
-
-	-- Platforms supported by each game (depends on games_master)
-	CREATE TABLE silver.game_platforms (
-	    steam_appid INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    platform TEXT,
-	    PRIMARY KEY (steam_appid, platform)
-	);
-
-	-- Metadata for user reviews of games (depends on games_master and review_authors)
-	CREATE TABLE IF NOT EXISTS silver.game_review_stats (
+	-- Numeric measures (votes_up, comment_count, etc.) for each review
+	CREATE TABLE IF NOT EXISTS silver.fct_review_stat (
 	    id                       BIGSERIAL PRIMARY KEY,
 	    recommendation_id        BIGINT NOT NULL,  -- original Steam review ID
-	    steam_appid              INTEGER REFERENCES silver.games_master(steam_appid) ON DELETE CASCADE,
-	    author_steamid           BIGINT  REFERENCES silver.review_authors(steamid),
+	    steam_appid              INTEGER REFERENCES silver.hub_game(steam_appid) ON DELETE CASCADE,
+	    author_steamid           BIGINT  REFERENCES silver.hub_author(steamid),
 	    language                 TEXT,
 	    timestamp_created        TIMESTAMP,
 	    timestamp_updated        TIMESTAMP,
@@ -195,28 +187,34 @@ BEGIN
 	    written_during_early_access BOOLEAN
 	);
 
-	-- Review text body (depends on game_review_stats)
-	CREATE TABLE IF NOT EXISTS silver.game_reviews (
+/*
+===================================================================
+5. Satellite tables:
+===================================================================
+*/
+
+	-- Descriptive text (review_text) tied to a review‑stat record
+	CREATE TABLE IF NOT EXISTS silver.sat_review_text (
 	    id                   BIGSERIAL PRIMARY KEY,
 	    review_stat_rec_id   BIGINT NOT NULL,
 	    review_text          TEXT,
-	    CONSTRAINT game_reviews_review_stat_id_fkey FOREIGN KEY (review_stat_rec_id)
-	      REFERENCES silver.game_review_stats(id) ON DELETE CASCADE
+	    CONSTRAINT sat_review_text_review_stat_id_fkey FOREIGN KEY (review_stat_rec_id)
+	      REFERENCES silver.fct_review_stat(id) ON DELETE CASCADE
 	);
 
 	-- Indexes to optimize queries filtering by steam_appid
-	CREATE INDEX idx_game_categories_appid    ON silver.game_categories   (steam_appid);
-	CREATE INDEX idx_game_genres_appid        ON silver.game_genres       (steam_appid);
-	CREATE INDEX idx_game_developers_appid    ON silver.game_developers   (steam_appid);
-	CREATE INDEX idx_game_ratings_appid       ON silver.game_ratings      (steam_appid);
-	CREATE INDEX idx_game_review_stats_appid  ON silver.game_review_stats (steam_appid);
-	CREATE INDEX idx_game_reviews_by_recid    ON silver.game_reviews      (review_stat_rec_id);
+	CREATE INDEX idx_bridge_category_appid    ON silver.bridge_category   (steam_appid);
+	CREATE INDEX idx_bridge_genre_appid        ON silver.bridge_genre       (steam_appid);
+	CREATE INDEX idx_bridge_developer_appid    ON silver.bridge_developer   (steam_appid);
+	CREATE INDEX idx_fct_rating_appid       ON silver.fct_rating      (steam_appid);
+	CREATE INDEX idx_fct_review_stat_appid  ON silver.fct_review_stat (steam_appid);
+	CREATE INDEX idx_sat_review_text_by_recid    ON silver.sat_review_text      (review_stat_rec_id);
 	-- For common join/lookups
-	CREATE INDEX idx_grs_by_recommendation_id ON silver.game_review_stats(recommendation_id);
-	CREATE INDEX idx_grs_by_author           ON silver.game_review_stats(author_steamid);
+	CREATE INDEX idx_grs_by_recommendation_id ON silver.fct_review_stat(recommendation_id);
+	CREATE INDEX idx_grs_by_author           ON silver.fct_review_stat(author_steamid);
 
 END;
 $BODY$;
-ALTER PROCEDURE silver.rebuild_all_tables()
+ALTER PROCEDURE silver.build_silver_tables()
     OWNER TO postgres;
 

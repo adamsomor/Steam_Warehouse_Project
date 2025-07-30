@@ -25,6 +25,6 @@ CREATE DATABASE steam_data
 -- Create Schemas: bronze, silver, gold
 -- ============================================
 
-CREATE SCHEMA IF NOT EXISTS bronze AUTHORIZATION postgres;
-CREATE SCHEMA IF NOT EXISTS silver AUTHORIZATION postgres;
-CREATE SCHEMA IF NOT EXISTS gold AUTHORIZATION postgres;
+CREATE SCHEMA IF NOT EXISTS bronze;
+CREATE SCHEMA IF NOT EXISTS silver;
+CREATE SCHEMA IF NOT EXISTS gold;

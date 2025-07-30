@@ -4,16 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_dim_genres();
+		CALL silver.load_dim_genre();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.dim_genres
+			into silver.dim_genre
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_dim_genres()
+CREATE OR REPLACE PROCEDURE silver.load_dim_genre()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,14 +21,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: dim_genres';
+    RAISE NOTICE 'Loading Silver Layer: dim_genre';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-	INSERT INTO silver.dim_genres (genre_id, genre_description)
+	INSERT INTO silver.dim_genre (genre_id, genre_description)
 	SELECT DISTINCT
 	  (elem->>'id')::INTEGER AS genre_id,
 	  elem->>'description'    AS genre_description

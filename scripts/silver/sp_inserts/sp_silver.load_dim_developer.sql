@@ -4,16 +4,17 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_game_reviews();
+		CALL silver.load_dim_developer();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.game_reviews
+			into silver.dim_developer
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_game_reviews()
+
+CREATE OR REPLACE PROCEDURE silver.load_dim_developer()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,32 +22,23 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: game_reviews';
+    RAISE NOTICE 'Loading Silver Layer: dim_developer';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-	INSERT INTO silver.game_reviews (
-	    review_stat_rec_id,
-	    review_text
-	)
-	SELECT
-	    grs.id,  -- from matched record in game_review_stats
-	    rev->>'review'
-	FROM bronze.steam_app_details bd
-	CROSS JOIN LATERAL jsonb_array_elements(
-	    bd.raw_json->'review_stats'->'reviews'
-	) AS rev(rev)
-	JOIN silver.game_review_stats grs
-	  ON grs.recommendation_id = (rev->>'recommendationid')::BIGINT
-	WHERE bd.raw_json ? 'review_stats'
-	  AND jsonb_typeof(bd.raw_json->'review_stats'->'reviews') = 'array';
+    INSERT INTO silver.dim_developer (developer_name)
+    SELECT DISTINCT
+        jsonb_array_elements_text(raw_json->'developers')
+    FROM bronze.steam_app_details
+    WHERE raw_json ? 'developers'
+      AND jsonb_typeof(raw_json->'developers') = 'array';
 
     end_time := clock_timestamp();
-    RAISE NOTICE 'Load complete: % (took % seconds)', end_time,
+    RAISE NOTICE 'Load complete at % (took % seconds)',
+                 end_time,
                  EXTRACT(EPOCH FROM end_time - start_time);
-
 END;
 $BODY$;

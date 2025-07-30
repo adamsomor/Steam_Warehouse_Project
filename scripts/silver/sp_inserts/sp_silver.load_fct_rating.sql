@@ -4,16 +4,16 @@
 					LOAD DATA
 ====================================================
 To execute run:
-		CALL silver.load_game_ratings();
+		CALL silver.load_fct_rating();
 		
 ====================================================
 It loads data from the table
 		'bronze.steam_app_details'
-			into silver.game_ratings
+			into silver.fct_rating
 ====================================================
 */
 
-CREATE OR REPLACE PROCEDURE silver.load_game_ratings()
+CREATE OR REPLACE PROCEDURE silver.load_fct_rating()
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
@@ -21,14 +21,14 @@ DECLARE
     end_time TIMESTAMP;
 BEGIN
     RAISE NOTICE '================================================';
-    RAISE NOTICE 'Loading Silver Layer: game_ratings';
+    RAISE NOTICE 'Loading Silver Layer: fct_rating';
     RAISE NOTICE '================================================';
 
     start_time := clock_timestamp();
 
     RAISE NOTICE 'Starting to load . . ';
 
-	INSERT INTO silver.game_ratings (
+	INSERT INTO silver.fct_rating (
 	    steam_appid,
 	    rating_agency_id,
 	    rating,
@@ -69,7 +69,7 @@ BEGIN
 	
 	FROM bronze.steam_app_details AS b
 	CROSS JOIN LATERAL jsonb_each(b.raw_json->'ratings') AS rating_info(agency_code, rating_val)
-	JOIN silver.dim_rating_agencies a
+	JOIN silver.dim_agency a
 	  ON a.agency_code = rating_info.agency_code
 	WHERE b.raw_json ? 'ratings'
 	  AND jsonb_typeof(b.raw_json->'ratings') = 'object'

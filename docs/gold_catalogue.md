@@ -34,7 +34,7 @@
 
 ---
 
-### Table: `dim_genres`
+### Table: `dim_genre`
 
 | Column             | PK  | FK  | Data Type | Description                     |
 |--------------------|-----|-----|-----------|---------------------------------|
@@ -43,7 +43,7 @@
 
 ---
 
-### Table: `dim_categories`
+### Table: `dim_category`
 
 | Column              | PK  | FK  | Data Type | Description                     |
 |---------------------|-----|-----|-----------|---------------------------------|
@@ -52,7 +52,7 @@
 
 ---
 
-### Table: `dim_publishers`
+### Table: `dim_publisher`
 
 | Column           | PK  | FK  | Data Type | Description                     |
 |------------------|-----|-----|-----------|---------------------------------|
@@ -61,7 +61,7 @@
 
 ---
 
-### Table: `dim_developers`
+### Table: `dim_developer`
 
 | Column           | PK  | FK  | Data Type | Description                     |
 |------------------|-----|-----|-----------|---------------------------------|
@@ -70,7 +70,7 @@
 
 ---
 
-### Table: `dim_rating_agencies`
+### Table: `dim_agency`
 
 | Column              | PK  | FK  | Data Type | Description                    |
 |---------------------|-----|-----|-----------|-------------------------------|
@@ -79,7 +79,7 @@
 
 ---
 
-### Table: `dim_review_authors`
+### Table: `dim_hub_author`
 
 | Column               | PK  | FK  | Data Type   | Description                             |
 |----------------------|-----|-----|-------------|-----------------------------------------|
@@ -95,7 +95,7 @@
 
 ### Fact Tables
 
-#### Table: `fact_game_platforms`
+#### Table: `fact_bridge_platform`
 
 | Column       | PK           | FK                      | Data Type | Description                               |
 |--------------|--------------|-------------------------|-----------|-------------------------------------------|
@@ -104,48 +104,48 @@
 
 ---
 
-#### Table: `fact_game_genres`
+#### Table: `fact_bridge_genre`
 
 | Column    | PK           | FK                     | Data Type | Description                           |
 |-----------|--------------|------------------------|-----------|-------------------------------------|
 | `game_id` | CPK          | FK to `dim_games(game_id)` | INTEGER   | Game identifier.                     |
-| `genre_id`| CPK          | FK to `dim_genres(genre_id)` | INTEGER   | Genre identifier.                    |
+| `genre_id`| CPK          | FK to `dim_genre(genre_id)` | INTEGER   | Genre identifier.                    |
 
 ---
 
-#### Table: `fact_game_categories`
+#### Table: `fact_bridge_category`
 
 | Column      | PK           | FK                     | Data Type | Description                           |
 |-------------|--------------|------------------------|-----------|-------------------------------------|
 | `game_id`   | CPK          | FK to `dim_games(game_id)` | INTEGER   | Game identifier.                     |
-| `category_id`| CPK         | FK to `dim_categories(category_id)` | INTEGER   | Category identifier.                 |
+| `category_id`| CPK         | FK to `dim_category(category_id)` | INTEGER   | Category identifier.                 |
 
 ---
 
-#### Table: `fact_game_publishers`
+#### Table: `fact_bridge_publisher`
 
 | Column      | PK           | FK                       | Data Type | Description                           |
 |-------------|--------------|--------------------------|-----------|-------------------------------------|
 | `game_id`   | CPK          | FK to `dim_games(game_id)`   | INTEGER   | Game identifier.                     |
-| `publisher_id`| CPK         | FK to `dim_publishers(publisher_id)` | INTEGER   | Publisher identifier.                |
+| `publisher_id`| CPK         | FK to `dim_publisher(publisher_id)` | INTEGER   | Publisher identifier.                |
 
 ---
 
-#### Table: `fact_game_developers`
+#### Table: `fact_bridge_developer`
 
 | Column      | PK           | FK                         | Data Type | Description                           |
 |-------------|--------------|----------------------------|-----------|-------------------------------------|
 | `game_id`   | CPK          | FK to `dim_games(game_id)`   | INTEGER   | Game identifier.                     |
-| `developer_id`| CPK         | FK to `dim_developers(developer_id)`| INTEGER   | Developer identifier.                |
+| `developer_id`| CPK         | FK to `dim_developer(developer_id)`| INTEGER   | Developer identifier.                |
 
 ---
 
-#### Table: `fact_game_ratings`
+#### Table: `fact_fct_rating`
 
 | Column             | PK           | FK                           | Data Type | Description                                  |
 |--------------------|--------------|------------------------------|-----------|----------------------------------------------|
 | `game_id`          | CPK          | FK to `dim_games(game_id)`     | INTEGER   | Game identifier.                             |
-| `rating_agency_id` | CPK          | FK to `dim_rating_agencies(rating_agency_id)` | INTEGER   | Rating agency identifier.                    |
+| `rating_agency_id` | CPK          | FK to `dim_agency(rating_agency_id)` | INTEGER   | Rating agency identifier.                    |
 | `rating`           |              |                              | TEXT      | Rating value from the agency (max if multiple).  |
 | `required_age`     |              |                              | INTEGER   | Required minimum age (max if multiple).      |
 | `banned`           |              |                              | BOOLEAN   | If game is banned (aggregated using BOOL_OR).|
@@ -179,7 +179,7 @@
 | `review_stat_id`         | PK  |                          | BIGINT      | Unique review statistics record ID.                 |
 | `recommendation_id`      |     |                          | BIGINT      | Steam recommendation ID related to review.         |
 | `game_id`                |     | FK to `dim_games(game_id)` | INTEGER    | Game identifier.                                    |
-| `author_id`              |     | FK to `dim_review_authors(author_id)` | BIGINT | Reviewer Steam ID.                                  |
+| `author_id`              |     | FK to `dim_hub_author(author_id)` | BIGINT | Reviewer Steam ID.                                  |
 | `language`               |     |                          | TEXT        | Language of the review.                             |
 | `timestamp_created`      |     |                          | TIMESTAMPTZ | When the review was created.                         |
 | `timestamp_updated`      |     |                          | TIMESTAMPTZ | When the review was last updated.                    |
